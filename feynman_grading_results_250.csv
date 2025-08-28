@@ -1,0 +1,112 @@
+id,llm,baseline_grade,final_grade,actual_grade,final_flesch_kincaid,final_dale_chall,iterations_used,core_concept,final_explanation
+2189,CHATGPT,10.0,9.0,14.0,2.4,12.94,3,"The essay argues for continuing online classes (via Zoom) after COVID-19 rather than mandatory face-to-face instruction. It claims online learning saves time, reduces expenses, and offers greater flexibility for students.","Here’s an ultra-simple version for a younger child (about 2–3 years old):
+
+- Two ways to learn: at home on a screen, or in a room with a teacher.
+
+- Online class: at home, you use a screen. The teacher and friends are on the screen.
+
+- Why online: it starts fast. You can wear comfy clothes. You can watch again if you miss something.
+
+- What online looks like: the screen shows the teacher and friends. You learn at home.
+
+- A small note: it can be harder to ask questions or talk on the screen.
+
+- The big idea: kids learn in different ways. Some learn best online, some in a room with a teacher. The goal is to learn and be happy."
+2189,CLAUDE,7.0,7.0,14.0,2.6,15.95,5,"The author argues that universities should continue offering online Zoom classes after COVID-19 instead of returning to mandatory in-person instruction. The main argument is that online classes are superior because they save students time, reduce transportation and equipment expenses, and provide greater flexibility in how students spend their free time.","**Learning at Home or Learning at School**
+
+Some kids learn with Mama and Dada at home. Some kids go to school!
+
+**At home:**
+- Stay in PJs!
+- Teddy comes too
+- Yummy snacks
+- Mama hugs
+
+**At school:**
+- Put on clothes
+- Play with friends
+- Big yellow bus - beep beep!
+- Slide and swings!
+
+Home = cozy like your crib
+School = big like the park
+
+Both good! Like milk AND cookies yummy!
+
+You learn everywhere! Home, school, anywhere!
+
+*claps hands*"
+2189,GEMINI,8.0,8.0,14.0,0.89,13.44,3,"The core concept is that the university should permanently adopt online (Zoom) classes instead of returning to face-to-face instruction after the COVID-19 pandemic. This change is advocated to provide students with greater efficiency, reduced expenses, and increased personal flexibility.","Okay, listen close!
+
+Mommy and Daddy sometimes go in the car for their jobs, or to learn new things. Vroom, vroom!
+
+Remember when we stayed home a lot, like when the sniffles were around? Mommy and Daddy did their work or learned on the computer. Right here, at home!
+
+Now, some grown-ups say, ""Let's keep doing that! Let's stay home to work or learn!""
+
+Here's why it's super-duper good:
+
+1.  **More Time for YOU!**
+    If Mommy and Daddy don't go in the car, they don't drive far away. Guess what? More time for hugs! More time to play with you! Or read a book! Yay! More happy time!
+
+2.  **No Car = Treats!**
+    No car, so no special gas money! So, they save money! Yay! More money for yummy ice cream! Or a new toy for you! Hooray! Treats!
+
+3.  **Learn at Home!**
+    They can work or learn right here, at our house! On the comfy couch! Or even at Grandma's house! So easy! When they're not sleepy, they can learn! Happy grown-ups!
+
+So, the big idea is: grown-ups stay home to work or learn on the computer! It means more time for you, more yummy treats, and easy learning! Everyone is happy!"
+162,CHATGPT,0.0,0.0,13.5,2.83,14.25,2,"I can’t extract a core concept from the essay because the provided text is missing (it shows ""nan""). 
+
+If you want a core concept based on the prompt, it could be: The main idea is that study effectiveness depends on the learner's needs, with solo study offering focus and flexibility and group study offering collaboration and accountability.","Big idea:
+- Kids learn in different ways. Some learn alone. Some learn with friends.
+
+Solo time (learning by yourself):
+- What it is: you do it by yourself.
+- Good parts: quiet, you go at your own speed, you can stop when you want.
+- What it feels like: your own calm space.
+
+Group time (learning with friends):
+- What it is: you do it with friends.
+- Good parts: you hear new ideas, you help each other, you don’t feel alone.
+- What it feels like: you talk, you cheer each other on.
+
+When to choose which:
+- Solo: when you want quiet or to finish something fast.
+- Group: when you want ideas from friends, someone to help, or you want company.
+
+Tiny plan you can try:
+- Do a little by yourself.
+- Then do a little with one friend and tell what you learned.
+
+Short story:
+- Mia plays with blocks by herself and finishes a small puzzle.
+- Kai plays with two friends and learns by explaining counting to them.
+
+Bottom line:
+- The best way to learn is the way you like. Many kids use both."
+162,CLAUDE,0.0,0.0,13.5,1.75,12.98,3,"I cannot extract a core concept or main argument from this essay because the essay content shows ""nan"" (not a number/no content available). There is no actual essay text provided to analyze.","**What does ""nan"" mean?**
+""Nan"" means the computer is confused! It's like when your toy says ""beep beep"" instead of talking.
+
+**What happened?**
+You wanted me to look at a picture, but there was no picture there! It was empty!
+
+**Why does this happen?**
+Sometimes things don't work, like when:
+- Your toy stops working
+- The TV goes dark
+- A crayon breaks
+
+**What do we do?**
+We try again! Like when you drop your teddy bear - you just pick it up!
+
+If you want to show me a picture, make sure the picture is there first. Then I can see it!
+
+It's okay! We can try again! 😊"
+162,GEMINI,0.0,0.0,13.5,2.03,12.08,2,"The essay text is ""nan,"" indicating that no essay was provided. Therefore, I cannot extract a core concept or main argument.","Okay, imagine I'm your friend who loves to read books with you!
+
+Sometimes, when you give me a book to read, it's empty! Like a blank page with no pictures or words. Or sometimes, instead of a story, it just has a special word that looks like 'nan.'
+
+'Nan' is a little secret word that means: **""Uh oh! There's no story here!""** It's like a sign that says, ""Oops! Nothing to read!""
+
+So, if the book is empty, or it just says 'nan,' I can't tell you what it's about! I can't tell you if it's about a magic unicorn, or a brave knight, or a silly monster. Because... poof! There's just nothing there! It's like a big empty box where the toys should be, but they're not."
