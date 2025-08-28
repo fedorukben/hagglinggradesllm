@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import csv
+import os
 from typing import Dict, List, Tuple
 import time
 from code import ask, LLM
@@ -406,9 +407,58 @@ Provide ONLY the numerical grade, no explanation.
         """Run complete analysis on essays from a dataframe (for stratified sampling)"""
         print(f"Processing {len(df)} essays from dataframe...")
         
-        results = []
+        # Load existing results if file exists
+        existing_results = []
+        if os.path.exists(output_file):
+            try:
+                existing_df = pd.read_csv(output_file)
+                existing_results = existing_df.to_dict('records')
+                print(f"Found existing results file with {len(existing_results)} entries")
+                
+                # Create a set of already processed essay-LLM combinations
+                processed_combinations = set()
+                for result in existing_results:
+                    processed_combinations.add((result['id'], result['llm']))
+                
+                print(f"Already processed {len(processed_combinations)} essay-LLM combinations")
+                
+            except Exception as e:
+                print(f"Warning: Could not load existing results file: {e}")
+                existing_results = []
+                processed_combinations = set()
+        else:
+            processed_combinations = set()
+        
+        # Start with existing results
+        results = existing_results.copy()
         llms_to_test = [LLM.CHATGPT, LLM.CLAUDE, LLM.GEMINI]
         
+        # Calculate how many new combinations need to be processed
+        total_combinations = len(df) * len(llms_to_test)
+        remaining_combinations = total_combinations - len(processed_combinations)
+        
+        print(f"Total combinations needed: {total_combinations}")
+        print(f"Combinations already processed: {len(processed_combinations)}")
+        print(f"Combinations remaining: {remaining_combinations}")
+        
+        # Show breakdown by LLM
+        if existing_results:
+            print("\nProgress by LLM:")
+            for llm in llms_to_test:
+                llm_processed = sum(1 for r in existing_results if r['llm'] == llm.name)
+                llm_total = len(df)
+                llm_remaining = llm_total - llm_processed
+                print(f"  {llm.name}: {llm_processed}/{llm_total} essays ({llm_remaining} remaining)")
+        
+        if remaining_combinations == 0:
+            print("\nAll essays have already been processed! Loading existing results...")
+            self.print_summary(results)
+            return
+        
+        print(f"\nStarting to process {remaining_combinations} remaining combinations...")
+        
+        # Process remaining essays
+        processed_count = 0
         for idx, row in df.iterrows():
             essay_id = row['id']
             prompt = row['prompt']
@@ -420,13 +470,20 @@ Provide ONLY the numerical grade, no explanation.
             print(f"{'='*60}")
             
             for llm in llms_to_test:
+                # Check if this combination has already been processed
+                if (essay_id, llm.name) in processed_combinations:
+                    print(f"  Skipping {llm.name} - already processed")
+                    continue
+                
                 try:
                     result = self.process_essay(essay_id, prompt, essay, actual_grade, llm)
                     results.append(result)
+                    processed_count += 1
                     
-                    # Save intermediate results
-                    if len(results) % 3 == 0:  # Save every 3 results
+                    # Save intermediate results more frequently
+                    if len(results) % 2 == 0:  # Save every 2 results
                         self.save_results(results, output_file)
+                        print(f"  Progress: {processed_count}/{remaining_combinations} new combinations processed")
                         
                 except Exception as e:
                     print(f"Error processing essay {essay_id} with {llm.name}: {e}")
@@ -441,6 +498,7 @@ Provide ONLY the numerical grade, no explanation.
         # Save final results
         self.save_results(results, output_file)
         print(f"\nAnalysis complete! Results saved to {output_file}")
+        print(f"Total results: {len(results)} (including {len(existing_results)} existing)")
         
         # Print summary statistics
         self.print_summary(results)
