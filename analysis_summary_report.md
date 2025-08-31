@@ -10,7 +10,7 @@ This report presents the results of a comprehensive statistical analysis of the 
 - **LLMs Tested**: ChatGPT, Claude, Gemini, Grok, Qwen
 - **Missing Essays**: 88 essays had missing content ("nan" values)
 - **Grade Distribution**: 
-  - Low quality (0-5): 1.6% of essays
+  - Low quality (0-5): 1.6% of essays+
   - Medium quality (6-10): 42.9% of essays  
   - High quality (11-15): 54.3% of essays
 
