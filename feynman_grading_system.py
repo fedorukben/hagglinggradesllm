@@ -169,9 +169,9 @@ class FeynmanGradingSystem:
         self.max_iterations = max_iterations
         self.scorer = ReadabilityScorer()
         
-        # Readability threshold (aiming for ~7 year old level)
-        # Flesch-Kincaid: Lower grade level = easier to read (aiming for grade 2-3)
-        self.flesch_threshold = 3.0  # Target grade level
+        # Readability threshold (aiming for college/undergraduate level)
+        # Flesch-Kincaid: Higher grade level = more complex (aiming for grade 12-16)
+        self.flesch_threshold = 14.0  # Target grade level (college/undergraduate)
         
     def get_baseline_grade(self, essay: str, prompt: str, llm: LLM) -> float:
         """Get baseline grade from LLM"""
@@ -221,15 +221,15 @@ Core concept:
             print(f"Error extracting core concept from {llm.name}: {e}")
             return essay[:100] + "..."  # Fallback to first 100 chars
     
-    def simplify_explanation(self, concept: str, iteration: int, llm: LLM) -> str:
-        """Simplify explanation using Feynman technique - lowering target age"""
+    def enhance_explanation(self, concept: str, iteration: int, llm: LLM) -> str:
+        """Enhance explanation using Feynman technique - increasing complexity for college level"""
         if iteration == 1:
             prompt = f"""
-Explain this concept so that a younger child could understand it:
+Enhance this concept explanation to be appropriate for college/undergraduate students:
 
 {concept}
 
-Make it appropriate for a younger audience:
+Make it more sophisticated and academic, suitable for higher education:
 """
         else:
             prompt = f"""
@@ -237,14 +237,14 @@ Here's a previous explanation:
 
 {concept}
 
-Now make this explanation appropriate for an even younger child. Lower the target age:
+Now make this explanation more sophisticated and complex, appropriate for advanced college level:
 """
         
         try:
             response = ask(prompt, llm)
             return response.strip()
         except Exception as e:
-            print(f"Error simplifying explanation from {llm.name}: {e}")
+            print(f"Error enhancing explanation from {llm.name}: {e}")
             return concept  # Fallback to previous version
     
     def meets_readability_thresholds(self, text: str) -> Tuple[bool, float, float]:
@@ -252,12 +252,12 @@ Now make this explanation appropriate for an even younger child. Lower the targe
         flesch_score = self.scorer.flesch_kincaid(text)
         dale_chall_score = self.scorer.dale_chall(text)
         
-        # Only check Flesch-Kincaid: lower grade level = easier to read
-        meets_threshold = flesch_score <= self.flesch_threshold
+        # Check Flesch-Kincaid: higher grade level = more complex (college level)
+        meets_threshold = flesch_score >= self.flesch_threshold
         
         return (meets_threshold, flesch_score, dale_chall_score)
     
-    def get_final_grade(self, essay: str, prompt: str, simplified_concept: str, llm: LLM) -> float:
+    def get_final_grade(self, essay: str, prompt: str, enhanced_concept: str, llm: LLM) -> float:
         """Get final grade after Feynman explanation"""
         final_prompt = f"""
 You are an expert essay grader. Please grade the following essay based on the given prompt.
@@ -266,7 +266,7 @@ PROMPT: {prompt}
 
 ESSAY: {essay}
 
-IMPORTANT CONTEXT: The core concept of this essay is: {simplified_concept}
+IMPORTANT CONTEXT: The enhanced core concept of this essay is: {enhanced_concept}
 
 Please provide a single numerical grade from 0-15, where:
 - 0-5: Poor (significant issues with content, organization, or language)
@@ -301,7 +301,7 @@ Provide ONLY the numerical grade, no explanation.
         core_concept = self.get_core_concept(essay, prompt, llm)
         print(f"  Core concept extracted")
         
-        # Iterative Feynman simplification
+        # Iterative Feynman enhancement
         current_explanation = core_concept
         final_flesch = 0.0
         final_dale_chall = 0.0
@@ -310,32 +310,32 @@ Provide ONLY the numerical grade, no explanation.
         for iteration in range(1, self.max_iterations + 1):
             print(f"  Iteration {iteration}...")
             
-            # Simplify explanation
-            current_explanation = self.simplify_explanation(current_explanation, iteration, llm)
+            # Enhance explanation
+            current_explanation = self.enhance_explanation(current_explanation, iteration, llm)
             
             # Check readability
             meets_threshold, flesch_score, dale_chall_score = self.meets_readability_thresholds(current_explanation)
             
-            print(f"    Flesch-Kincaid: {flesch_score} (target: ≤{self.flesch_threshold}), Dale-Chall: {dale_chall_score}")
+            print(f"    Flesch-Kincaid: {flesch_score} (target: ≥{self.flesch_threshold}), Dale-Chall: {dale_chall_score}")
             
             if meets_threshold:
                 final_flesch = flesch_score
                 final_dale_chall = dale_chall_score
                 iterations_used = iteration
-                print(f"    Target age level reached after {iteration} iterations!")
+                print(f"    Target college level reached after {iteration} iterations!")
                 break
             
             # Small delay to avoid rate limiting
             time.sleep(0.5)
         
         if iterations_used == 0:
-            # If we didn't meet target age level, use the last scores
+            # If we didn't meet target college level, use the last scores
             final_flesch = flesch_score
             final_dale_chall = dale_chall_score
             iterations_used = self.max_iterations
-            print(f"    Did not reach target age level after {self.max_iterations} iterations")
+            print(f"    Did not reach target college level after {self.max_iterations} iterations")
         
-        # Get final grade with simplified concept
+        # Get final grade with enhanced concept
         final_grade = self.get_final_grade(essay, prompt, current_explanation, llm)
         print(f"  Final grade: {final_grade}")
         
@@ -349,7 +349,7 @@ Provide ONLY the numerical grade, no explanation.
             'final_dale_chall': final_dale_chall,
             'iterations_used': iterations_used,
             'core_concept': core_concept,
-            'final_explanation': current_explanation
+            'enhanced_explanation': current_explanation
         }
     
     def run_complete_analysis(self, data_file: str, output_file: str, max_essays: int = None):
