@@ -1,4 +1,0 @@
-id,generous_model,harsh_model,baseline_grade,initial_generous_grade,initial_harsh_grade,final_generous_grade,final_harsh_grade,consensus_grade,actual_grade_0_15,actual_grade_0_100,rounds_used,converged,grade_difference
-409,CHATGPT,GEMINI,69,72,32,63,60,62,9.5,63.3,6,True,3
-409,CHATGPT,CLAUDE,84,72,42,70,70,70,9.5,63.3,2,True,0
-409,GEMINI,CHATGPT,74,70,53,66,63,64,9.5,63.3,2,True,3
