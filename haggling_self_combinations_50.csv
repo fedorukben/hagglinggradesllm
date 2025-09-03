@@ -1,0 +1,9 @@
+id,generous_model,harsh_model,baseline_grade,initial_generous_grade,initial_harsh_grade,final_generous_grade,final_harsh_grade,consensus_grade,actual_grade_0_15,actual_grade_0_100,rounds_used,converged,grade_difference
+409,CHATGPT,CHATGPT,79,72,46,64,64,64,9.5,63.3,3,True,0
+409,CLAUDE,CLAUDE,71,78,42,72,70,71,9.5,63.3,4,True,2
+409,QWEN,QWEN,85,87,42,76,74,75,9.5,63.3,8,True,2
+409,GROK,GROK,70,85,35,72,70,71,9.5,63.3,7,True,2
+409,MISTRAL,MISTRAL,67,88,65,81,79,80,9.5,63.3,7,True,2
+409,COMMAND,COMMAND,81,75,50,68,65,66,9.5,63.3,4,True,3
+409,GEMMA,GEMMA,66,78,62,74,72,73,9.5,63.3,4,True,2
+1375,CHATGPT,CHATGPT,72,74,45,66,63,64,10.0,66.7,3,True,3

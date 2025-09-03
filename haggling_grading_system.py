@@ -22,7 +22,7 @@ class HagglingGradingSystem:
         self.convergence_threshold = convergence_threshold  # Grades must be within this range to converge
         
         # Define all available models
-        self.models = [LLM.CHATGPT, LLM.CLAUDE, LLM.QWEN]
+        self.models = [LLM.CHATGPT, LLM.CLAUDE, LLM.QWEN, LLM.GROK, LLM.MISTRAL, LLM.COMMAND, LLM.GEMMA]
         
         # Default model assignment (can be overridden)
         self.generous_model = LLM.CHATGPT  # More generous grader
@@ -270,10 +270,32 @@ Provide ONLY a single integer grade from 0-100.
         print(f"    Initial generous grade: {initial_generous}")
         print(f"    Initial harsh grade: {initial_harsh}")
         
+        # Initialize detailed tracking variables
+        initial_swap_needed = False
+        total_warnings = 0
+        total_swaps = 0
+        big_jumps_generous = 0  # 15+ point changes
+        big_jumps_harsh = 0
+        small_changes_generous = 0  # 1-5 point changes
+        small_changes_harsh = 0
+        medium_changes_generous = 0  # 6-14 point changes
+        medium_changes_harsh = 0
+        no_change_generous = 0
+        no_change_harsh = 0
+        total_grade_movement_generous = 0
+        total_grade_movement_harsh = 0
+        max_grade_movement_generous = 0
+        max_grade_movement_harsh = 0
+        min_grade_movement_generous = float('inf')
+        min_grade_movement_harsh = float('inf')
+        
         # Check if grades need to be swapped (harsh > generous)
         if initial_harsh > initial_generous:
             print(f"    Warning: Harsh grade ({initial_harsh}) > Generous grade ({initial_generous}). Swapping grades.")
             initial_generous, initial_harsh = initial_harsh, initial_generous
+            initial_swap_needed = True
+            total_swaps += 1
+            total_warnings += 1
             print(f"    After swap: Generous={initial_generous}, Harsh={initial_harsh}")
         
         # Start haggling
@@ -281,6 +303,7 @@ Provide ONLY a single integer grade from 0-100.
         current_harsh = initial_harsh
         rounds_used = 0
         haggling_history = []
+        round_details = []
         
         for round_num in range(1, self.max_rounds + 1):
             print(f"  Round {round_num}...")
@@ -306,11 +329,58 @@ Provide ONLY a single integer grade from 0-100.
             print(f"    Generous: {current_generous} → {new_generous}")
             print(f"    Harsh: {current_harsh} → {new_harsh}")
             
+            # Track grade movements
+            generous_movement = abs(new_generous - current_generous)
+            harsh_movement = abs(new_harsh - current_harsh)
+            
+            total_grade_movement_generous += generous_movement
+            total_grade_movement_harsh += harsh_movement
+            max_grade_movement_generous = max(max_grade_movement_generous, generous_movement)
+            max_grade_movement_harsh = max(max_grade_movement_harsh, harsh_movement)
+            min_grade_movement_generous = min(min_grade_movement_generous, generous_movement) if generous_movement > 0 else min_grade_movement_generous
+            min_grade_movement_harsh = min(min_grade_movement_harsh, harsh_movement) if harsh_movement > 0 else min_grade_movement_harsh
+            
+            # Categorize changes
+            if generous_movement == 0:
+                no_change_generous += 1
+            elif generous_movement >= 15:
+                big_jumps_generous += 1
+            elif generous_movement <= 5:
+                small_changes_generous += 1
+            else:
+                medium_changes_generous += 1
+                
+            if harsh_movement == 0:
+                no_change_harsh += 1
+            elif harsh_movement >= 15:
+                big_jumps_harsh += 1
+            elif harsh_movement <= 5:
+                small_changes_harsh += 1
+            else:
+                medium_changes_harsh += 1
+            
             # Check if grades need to be swapped after haggling
+            swap_needed = False
             if new_harsh > new_generous:
                 print(f"    Warning: Harsh grade ({new_harsh}) > Generous grade ({new_generous}). Swapping grades.")
                 new_generous, new_harsh = new_harsh, new_generous
+                swap_needed = True
+                total_swaps += 1
+                total_warnings += 1
                 print(f"    After swap: Generous={new_generous}, Harsh={new_harsh}")
+            
+            # Record round details
+            round_details.append({
+                'round': round_num,
+                'generous_before': current_generous,
+                'generous_after': new_generous,
+                'harsh_before': current_harsh,
+                'harsh_after': new_harsh,
+                'generous_movement': generous_movement,
+                'harsh_movement': harsh_movement,
+                'swap_needed': swap_needed,
+                'grade_gap': abs(new_generous - new_harsh)
+            })
             
             current_generous = new_generous
             current_harsh = new_harsh
@@ -326,6 +396,24 @@ Provide ONLY a single integer grade from 0-100.
         final_grade = self.get_final_grade(current_generous, current_harsh)
         print(f"  Final consensus grade: {final_grade}")
         
+        # Calculate additional metrics
+        initial_grade_gap = abs(initial_generous - initial_harsh)
+        final_grade_gap = abs(current_generous - current_harsh)
+        total_grade_gap_reduction = initial_grade_gap - final_grade_gap
+        avg_grade_movement_generous = total_grade_movement_generous / rounds_used if rounds_used > 0 else 0
+        avg_grade_movement_harsh = total_grade_movement_harsh / rounds_used if rounds_used > 0 else 0
+        
+        # Calculate efficiency metrics
+        efficiency_score = total_grade_gap_reduction / rounds_used if rounds_used > 0 else 0
+        stubbornness_score = (no_change_generous + no_change_harsh) / (rounds_used * 2) if rounds_used > 0 else 0
+        volatility_score = (big_jumps_generous + big_jumps_harsh) / (rounds_used * 2) if rounds_used > 0 else 0
+        
+        # Calculate bias metrics
+        generous_bias = initial_generous - actual_grade_100
+        harsh_bias = initial_harsh - actual_grade_100
+        consensus_bias = final_grade - actual_grade_100
+        baseline_bias = baseline_grade - actual_grade_100
+        
         return {
             'id': essay_id,
             'baseline_grade': baseline_grade,
@@ -339,7 +427,39 @@ Provide ONLY a single integer grade from 0-100.
             'rounds_used': rounds_used,
             'converged': self.has_converged(current_generous, current_harsh),
             'grade_difference': abs(current_generous - current_harsh),
-            'haggling_history': haggling_history
+            'haggling_history': haggling_history,
+            
+            # Detailed tracking metrics
+            'initial_swap_needed': initial_swap_needed,
+            'total_warnings': total_warnings,
+            'total_swaps': total_swaps,
+            'big_jumps_generous': big_jumps_generous,
+            'big_jumps_harsh': big_jumps_harsh,
+            'small_changes_generous': small_changes_generous,
+            'small_changes_harsh': small_changes_harsh,
+            'medium_changes_generous': medium_changes_generous,
+            'medium_changes_harsh': medium_changes_harsh,
+            'no_change_generous': no_change_generous,
+            'no_change_harsh': no_change_harsh,
+            'total_grade_movement_generous': total_grade_movement_generous,
+            'total_grade_movement_harsh': total_grade_movement_harsh,
+            'max_grade_movement_generous': max_grade_movement_generous,
+            'max_grade_movement_harsh': max_grade_movement_harsh,
+            'min_grade_movement_generous': min_grade_movement_generous if min_grade_movement_generous != float('inf') else 0,
+            'min_grade_movement_harsh': min_grade_movement_harsh if min_grade_movement_harsh != float('inf') else 0,
+            'avg_grade_movement_generous': avg_grade_movement_generous,
+            'avg_grade_movement_harsh': avg_grade_movement_harsh,
+            'initial_grade_gap': initial_grade_gap,
+            'final_grade_gap': final_grade_gap,
+            'total_grade_gap_reduction': total_grade_gap_reduction,
+            'efficiency_score': efficiency_score,
+            'stubbornness_score': stubbornness_score,
+            'volatility_score': volatility_score,
+            'generous_bias': generous_bias,
+            'harsh_bias': harsh_bias,
+            'consensus_bias': consensus_bias,
+            'baseline_bias': baseline_bias,
+            'round_details': round_details
         }
     
     def run_analysis(self, data_file: str, output_file: str, max_essays: int = None):
@@ -533,7 +653,38 @@ Provide ONLY a single integer grade from 0-100.
                 'actual_grade_0_100': result['actual_grade_0_100'],
                 'rounds_used': result['rounds_used'],
                 'converged': result['converged'],
-                'grade_difference': result['grade_difference']
+                'grade_difference': result['grade_difference'],
+                
+                # Detailed tracking metrics
+                'initial_swap_needed': result.get('initial_swap_needed', False),
+                'total_warnings': result.get('total_warnings', 0),
+                'total_swaps': result.get('total_swaps', 0),
+                'big_jumps_generous': result.get('big_jumps_generous', 0),
+                'big_jumps_harsh': result.get('big_jumps_harsh', 0),
+                'small_changes_generous': result.get('small_changes_generous', 0),
+                'small_changes_harsh': result.get('small_changes_harsh', 0),
+                'medium_changes_generous': result.get('medium_changes_generous', 0),
+                'medium_changes_harsh': result.get('medium_changes_harsh', 0),
+                'no_change_generous': result.get('no_change_generous', 0),
+                'no_change_harsh': result.get('no_change_harsh', 0),
+                'total_grade_movement_generous': result.get('total_grade_movement_generous', 0),
+                'total_grade_movement_harsh': result.get('total_grade_movement_harsh', 0),
+                'max_grade_movement_generous': result.get('max_grade_movement_generous', 0),
+                'max_grade_movement_harsh': result.get('max_grade_movement_harsh', 0),
+                'min_grade_movement_generous': result.get('min_grade_movement_generous', 0),
+                'min_grade_movement_harsh': result.get('min_grade_movement_harsh', 0),
+                'avg_grade_movement_generous': result.get('avg_grade_movement_generous', 0),
+                'avg_grade_movement_harsh': result.get('avg_grade_movement_harsh', 0),
+                'initial_grade_gap': result.get('initial_grade_gap', 0),
+                'final_grade_gap': result.get('final_grade_gap', 0),
+                'total_grade_gap_reduction': result.get('total_grade_gap_reduction', 0),
+                'efficiency_score': result.get('efficiency_score', 0),
+                'stubbornness_score': result.get('stubbornness_score', 0),
+                'volatility_score': result.get('volatility_score', 0),
+                'generous_bias': result.get('generous_bias', 0),
+                'harsh_bias': result.get('harsh_bias', 0),
+                'consensus_bias': result.get('consensus_bias', 0),
+                'baseline_bias': result.get('baseline_bias', 0)
             }
             flattened_results.append(flat_result)
         
@@ -563,7 +714,38 @@ Provide ONLY a single integer grade from 0-100.
                 'actual_grade_0_100': result['actual_grade_0_100'],
                 'rounds_used': result['rounds_used'],
                 'converged': result['converged'],
-                'grade_difference': result['grade_difference']
+                'grade_difference': result['grade_difference'],
+                
+                # Detailed tracking metrics
+                'initial_swap_needed': result.get('initial_swap_needed', False),
+                'total_warnings': result.get('total_warnings', 0),
+                'total_swaps': result.get('total_swaps', 0),
+                'big_jumps_generous': result.get('big_jumps_generous', 0),
+                'big_jumps_harsh': result.get('big_jumps_harsh', 0),
+                'small_changes_generous': result.get('small_changes_generous', 0),
+                'small_changes_harsh': result.get('small_changes_harsh', 0),
+                'medium_changes_generous': result.get('medium_changes_generous', 0),
+                'medium_changes_harsh': result.get('medium_changes_harsh', 0),
+                'no_change_generous': result.get('no_change_generous', 0),
+                'no_change_harsh': result.get('no_change_harsh', 0),
+                'total_grade_movement_generous': result.get('total_grade_movement_generous', 0),
+                'total_grade_movement_harsh': result.get('total_grade_movement_harsh', 0),
+                'max_grade_movement_generous': result.get('max_grade_movement_generous', 0),
+                'max_grade_movement_harsh': result.get('max_grade_movement_harsh', 0),
+                'min_grade_movement_generous': result.get('min_grade_movement_generous', 0),
+                'min_grade_movement_harsh': result.get('min_grade_movement_harsh', 0),
+                'avg_grade_movement_generous': result.get('avg_grade_movement_generous', 0),
+                'avg_grade_movement_harsh': result.get('avg_grade_movement_harsh', 0),
+                'initial_grade_gap': result.get('initial_grade_gap', 0),
+                'final_grade_gap': result.get('final_grade_gap', 0),
+                'total_grade_gap_reduction': result.get('total_grade_gap_reduction', 0),
+                'efficiency_score': result.get('efficiency_score', 0),
+                'stubbornness_score': result.get('stubbornness_score', 0),
+                'volatility_score': result.get('volatility_score', 0),
+                'generous_bias': result.get('generous_bias', 0),
+                'harsh_bias': result.get('harsh_bias', 0),
+                'consensus_bias': result.get('consensus_bias', 0),
+                'baseline_bias': result.get('baseline_bias', 0)
             }
             flattened_results.append(flat_result)
         
@@ -622,6 +804,22 @@ Provide ONLY a single integer grade from 0-100.
         print(f"  Generous bias: {df['initial_generous_grade'].mean() - df['actual_grade_0_100'].mean():.1f} points")
         print(f"  Harsh bias: {df['initial_harsh_grade'].mean() - df['actual_grade_0_100'].mean():.1f} points")
         print(f"  Consensus bias: {df['consensus_grade'].mean() - df['actual_grade_0_100'].mean():.1f} points")
+        
+        # Detailed negotiation analysis
+        print(f"\nDetailed Negotiation Analysis:")
+        print(f"  Initial swaps needed: {df.get('initial_swap_needed', False).sum() if 'initial_swap_needed' in df.columns else 'N/A'}")
+        print(f"  Total warnings: {df.get('total_warnings', 0).sum() if 'total_warnings' in df.columns else 'N/A'}")
+        print(f"  Total swaps: {df.get('total_swaps', 0).sum() if 'total_swaps' in df.columns else 'N/A'}")
+        print(f"  Big jumps (15+ points): {df.get('big_jumps_generous', 0).sum() + df.get('big_jumps_harsh', 0).sum() if 'big_jumps_generous' in df.columns else 'N/A'}")
+        print(f"  Small changes (1-5 points): {df.get('small_changes_generous', 0).sum() + df.get('small_changes_harsh', 0).sum() if 'small_changes_generous' in df.columns else 'N/A'}")
+        print(f"  No changes: {df.get('no_change_generous', 0).sum() + df.get('no_change_harsh', 0).sum() if 'no_change_generous' in df.columns else 'N/A'}")
+        
+        if 'efficiency_score' in df.columns:
+            print(f"  Average efficiency score: {df['efficiency_score'].mean():.2f}")
+            print(f"  Average stubbornness score: {df['stubbornness_score'].mean():.2f}")
+            print(f"  Average volatility score: {df['volatility_score'].mean():.2f}")
+            print(f"  Average grade gap reduction: {df['total_grade_gap_reduction'].mean():.1f} points")
+            print(f"  Average total grade movement: {(df['total_grade_movement_generous'] + df['total_grade_movement_harsh']).mean():.1f} points")
     
     def print_summary_all_combinations(self, results: List[Dict]):
         """Print summary statistics for all model combinations"""
@@ -654,7 +852,7 @@ Provide ONLY a single integer grade from 0-100.
         # Model-specific analysis
         print(f"\nModel Performance Analysis:")
         
-        for model_name in ['CHATGPT', 'CLAUDE', 'QWEN']:
+        for model_name in ['CHATGPT', 'CLAUDE', 'QWEN', 'GROK', 'MISTRAL', 'COMMAND', 'GEMMA']:
             print(f"\n{model_name} as Generous Model:")
             generous_data = df[df['generous_model'] == model_name]
             if len(generous_data) > 0:
@@ -673,7 +871,7 @@ Provide ONLY a single integer grade from 0-100.
         
         # Combination-specific analysis
         print(f"\nModel Combination Analysis:")
-        for model_name in ['CHATGPT', 'CLAUDE', 'QWEN']:
+        for model_name in ['CHATGPT', 'CLAUDE', 'QWEN', 'GROK', 'MISTRAL', 'COMMAND', 'GEMMA']:
             combo_data = df[(df['generous_model'] == model_name) & (df['harsh_model'] == model_name)]
             if len(combo_data) > 0:
                 print(f"\n{model_name} (generous) vs {model_name} (harsh) - Self-Haggling:")
@@ -698,6 +896,22 @@ Provide ONLY a single integer grade from 0-100.
         else:
             degradation_pct = (consensus_rmse - baseline_rmse) / baseline_rmse * 100
             print(f"  Haggling degrades from baseline by {degradation_pct:.1f}%")
+        
+        # Detailed negotiation analysis for all combinations
+        print(f"\nDetailed Negotiation Analysis:")
+        print(f"  Initial swaps needed: {df.get('initial_swap_needed', False).sum() if 'initial_swap_needed' in df.columns else 'N/A'}")
+        print(f"  Total warnings: {df.get('total_warnings', 0).sum() if 'total_warnings' in df.columns else 'N/A'}")
+        print(f"  Total swaps: {df.get('total_swaps', 0).sum() if 'total_swaps' in df.columns else 'N/A'}")
+        print(f"  Big jumps (15+ points): {df.get('big_jumps_generous', 0).sum() + df.get('big_jumps_harsh', 0).sum() if 'big_jumps_generous' in df.columns else 'N/A'}")
+        print(f"  Small changes (1-5 points): {df.get('small_changes_generous', 0).sum() + df.get('small_changes_harsh', 0).sum() if 'small_changes_generous' in df.columns else 'N/A'}")
+        print(f"  No changes: {df.get('no_change_generous', 0).sum() + df.get('no_change_harsh', 0).sum() if 'no_change_generous' in df.columns else 'N/A'}")
+        
+        if 'efficiency_score' in df.columns:
+            print(f"  Average efficiency score: {df['efficiency_score'].mean():.2f}")
+            print(f"  Average stubbornness score: {df['stubbornness_score'].mean():.2f}")
+            print(f"  Average volatility score: {df['volatility_score'].mean():.2f}")
+            print(f"  Average grade gap reduction: {df['total_grade_gap_reduction'].mean():.1f} points")
+            print(f"  Average total grade movement: {(df['total_grade_movement_generous'] + df['total_grade_movement_harsh']).mean():.1f} points")
 
 def main():
     """Main function to run the haggling system"""
@@ -714,7 +928,7 @@ def main():
     print(f"Dataset loaded: {len(df)} essays")
     
     # Create a smaller sample for testing
-    sample_size = 50  # Start with a smaller sample
+    sample_size = 175  # Start with a smaller sample
     sample_file = f"DREsS_haggling_sample_{sample_size}.tsv"
     
     # Check if sample file already exists
@@ -730,7 +944,7 @@ def main():
     # Choose analysis mode
     print(f"\nChoose analysis mode:")
     print(f"1. Single model combination (ChatGPT generous vs Claude harsh)")
-    print(f"2. Same-model combinations (self-haggling with ChatGPT, Claude, Qwen)")
+    print(f"2. Same-model combinations (self-haggling with all 7 models)")
     
     mode = input("Enter choice (1 or 2): ").strip()
     
@@ -738,7 +952,7 @@ def main():
         # Run same-model combinations
         output_file = f"haggling_self_combinations_{sample_size}.csv"
         print(f"\nRunning same-model combinations analysis...")
-        print(f"Each essay will be processed 3 times (ChatGPT, Claude, Qwen each acting as both generous and harsh)")
+        print(f"Each essay will be processed 7 times (all models each acting as both generous and harsh)")
         print(f"Results will be saved to: {output_file}")
         print(f"You can stop and restart at any time - the system will resume from where it left off.")
         
